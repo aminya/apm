@@ -1,3 +1,5 @@
+rebuild = require 'electron-rebuild'
+
 path = require 'path'
 
 _ = require 'underscore-plus'
@@ -17,6 +19,7 @@ class Rebuild extends Command
     @atomDirectory = config.getAtomDirectory()
     @atomNodeDirectory = path.join(@atomDirectory, '.node-gyp')
     @atomNpmPath = require.resolve('npm/bin/npm-cli')
+    @electronRebuildPath = require.resolve('.bin/electron-rebuild')
 
   parseOptions: (argv) ->
     options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
@@ -34,9 +37,10 @@ class Rebuild extends Command
   forkNpmRebuild: (options, callback) ->
     process.stdout.write 'Rebuilding modules '
 
-    rebuildArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'rebuild']
+    rebuildArgs = ["--version", @electronVersion]
+    rebuildArgs.push(["--which-module", options.argv._.join(',')])
+    rebuildArgs.push(['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath()]...)
     rebuildArgs.push(@getNpmBuildFlags()...)
-    rebuildArgs.push(options.argv._...)
 
     if vsArgs = @getVisualStudioFlags()
       rebuildArgs.push(vsArgs)
@@ -46,7 +50,7 @@ class Rebuild extends Command
     env = _.extend({}, process.env, {HOME: @atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()})
     @addBuildEnvVars(env)
 
-    @fork(@atomNpmPath, rebuildArgs, {env}, callback)
+    @fork(@electronRebuildPath, rebuildArgs, {env}, callback)
 
   run: (options) ->
     {callback} = options
